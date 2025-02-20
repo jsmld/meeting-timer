@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Timer</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #4299e1, #7e3af2);
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            width: 24rem;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1a202c;
+            margin: 0;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 0.25rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        .start-btn {
+            background-color: #4299e1;
+        }
+
+        .start-btn:hover {
+            background-color: #3182ce;
+        }
+
+        .pause-btn {
+            background-color: #ecc94b;
+        }
+
+        .pause-btn:hover {
+            background-color: #d69e2e;
+        }
+
+        .resume-btn {
+            background-color: #48bb78;
+        }
+
+        .resume-btn:hover {
+            background-color: #38a169;
+        }
+
+        .reset-btn {
+            background-color: #f56565;
+        }
+
+        .reset-btn:hover {
+            background-color: #e53e3e;
+        }
+
+        .restart-btn {
+            background-color: #805ad5;
+        }
+
+        .restart-btn:hover {
+            background-color: #6b46c1;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .timer-display {
+            font-size: 3.75rem;
+            font-weight: bold;
+            font-family: monospace;
+            color: #1a202c;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .sound-settings {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .sound-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4a5568;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .sound-toggle input[type="checkbox"] {
+            width: auto;
+        }
+
+        .sound-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sound-type {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sound-type input[type="radio"] {
+            width: auto;
+        }
+
+        .custom-sound {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+
+        .file-label:hover {
+            background-color: #cbd5e0;
+        }
+
+        .file-name {
+            font-size: 0.875rem;
+            color: #4a5568;
+            word-break: break-all;
+        }
+
+        .test-sound-btn {
+            background-color: #718096;
+            margin-top: 0.5rem;
+        }
+
+        .test-sound-btn:hover {
+            background-color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4299e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <h1 class="title">Meeting Timer</h1>
+        </div>
+
+        <div id="input-section">
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="hours">Hours</label>
+                    <input type="number" id="hours" min="0" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="minutes">Minutes</label>
+                    <input type="number" id="minutes" min="0" max="59" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="seconds">Seconds</label>
+                    <input type="number" id="seconds" min="0" max="59" value="0">
+                </div>
+            </div>
+            <div class="sound-settings">
+                <label class="sound-toggle">
+                    <input type="checkbox" id="sound-enabled" checked>
+                    Enable sound alert
+                </label>
+                <div class="sound-options">
+                    <div class="sound-type">
+                        <input type="radio" id="default-sound" name="sound-type" value="default" checked>
+                        <label for="default-sound">Default Sounds</label>
+                        <select id="sound-select" class="sound-select">
+                            <option value="bell">Bell</option>
+                            <option value="alert">Alert</option>
+                            <option value="chime">Chime</option>
+                        </select>
+                    </div>
+                    <div class="sound-type">
+                        <input type="radio" id="custom-sound" name="sound-type" value="custom">
+                        <label for="custom-sound">Custom Sound</label>
+                    </div>
+                    <div class="custom-sound">
+                        <input type="file" id="audio-file" class="file-input" accept="audio/*">
+                        <label for="audio-file" class="file-label">Choose audio file</label>
+                        <div id="file-name" class="file-name"></div>
+                        <button id="test-sound" class="test-sound-btn" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            Test Sound
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button id="start-btn" class="start-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Start Timer
+            </button>
+        </div>
+
+        <div id="timer-section" class="hidden">
+            <div id="time-display" class="timer-display">00:00:00</div>
+            <div class="button-group">
+                <button id="toggle-btn" class="pause-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                    Pause
+                </button>
+                <button id="reset-btn" class="reset-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 2v6h6"/>
+                        <path d="M3 13a9 9 0 1 0 3-7.7L3 8"/>
+                    </svg>
+                    Reset
+                </button>
+            </div>
+            <button id="restart-btn" class="restart-btn hidden" style="margin-top: 1rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                    <path d="M16 16h5v5"/>
+                </svg>
+                Restart with Same Time
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let timeInSeconds = 0;
+        let initialTime = 0;
+        let isRunning = false;
+        let interval;
+        let customAudio = null;
+
+        const inputSection = document.getElementById('input-section');
+        const timerSection = document.getElementById('timer-section');
+        const startBtn = document.getElementById('start-btn');
+        const toggleBtn = document.getElementById('toggle-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const timeDisplay = document.getElementById('time-display');
+        const hoursInput = document.getElementById('hours');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+        const soundEnabled = document.getElementById('sound-enabled');
+        const soundSelect = document.getElementById('sound-select');
+        const defaultSoundRadio = document.getElementById('default-sound');
+        const customSoundRadio = document.getElementById('custom-sound');
+        const audioFileInput = document.getElementById('audio-file');
+        const fileNameDisplay = document.getElementById('file-name');
+        const testSoundBtn = document.getElementById('test-sound');
+
+        // Audio context and sounds
+        let audioContext;
+        const sounds = {
+            bell: {
+                frequency: 440,
+                type: 'sine',
+                duration: 0.5
+            },
+            alert: {
+                frequency: 880,
+                type: 'square',
+                duration: 0.3
+            },
+            chime: {
+                frequency: 523.25,
+                type: 'triangle',
+                duration: 1
+            }
+        };
+
+        function playDefaultSound() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const sound = sounds[soundSelect.value];
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = sound.type;
+            oscillator.frequency.setValueAtTime(sound.frequency, audioContext.currentTime);
+
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + sound.duration);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + sound.duration);
+        }
+
+        function playSound() {
+            if (!soundEnabled.checked) return;
+
+            if (defaultSoundRadio.checked) {
+                playDefaultSound();
+            } else if (customAudio) {
+                customAudio.currentTime = 0;
+                customAudio.play();
+            }
+        }
+
+        // Handle custom audio file upload
+        audioFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (customAudio) {
+                        URL.revokeObjectURL(customAudio.src);
+                    }
+                    customAudio = new Audio(e.target.result);
+                    fileNameDisplay.textContent = file.name;
+                    testSoundBtn.disabled = false;
+                    customSoundRadio.checked = true;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Test sound button
+        testSoundBtn.addEventListener('click', () => {
+            if (customAudio) {
+                customAudio.currentTime = 0;
+                customAudio.play();
+            }
+        });
+
+        function formatTime(time) {
+            const hours = Math.floor(time / 3600);
+            const minutes = Math.floor((time % 3600) / 60);
+            const seconds = time % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            timeDisplay.textContent = formatTime(timeInSeconds);
+        }
+
+        function startTimer() {
+            const hours = parseInt(hoursInput.value) || 0;
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            
+            timeInSeconds = hours * 3600 + minutes * 60 + seconds;
+            initialTime = timeInSeconds; // Store initial time for restart
+            
+            if (timeInSeconds > 0) {
+                isRunning = true;
+                inputSection.classList.add('hidden');
+                timerSection.classList.remove('hidden');
+                restartBtn.classList.add('hidden');
+                updateDisplay();
+                interval = setInterval(() => {
+                    timeInSeconds--;
+                    updateDisplay();
+                    
+                    if (timeInSeconds === 0) {
+                        clearInterval(interval);
+                        isRunning = false;
+                        playSound();
+                        toggleBtn.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                            Resume
+                        `;
+                        toggleBtn.className = 'resume-btn';
+                        restartBtn.classList.remove('hidden');
+                    }
+                }, 1000);
+            }
+        }
+
+        function restartTimer() {
+            timeInSeconds = initialTime;
+            isRunning = true;
+            restartBtn.classList.add('hidden');
+            updateDisplay();
+            interval = setInterval(() => {
+                timeInSeconds--;
+                updateDisplay();
+                
+                if (timeInSeconds === 0) {
+                    clearInterval(interval);
+                    isRunning = false;
+                    playSound();
+                    toggleBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Resume
+                    `;
+                    toggleBtn.className = 'resume-btn';
+                    restartBtn.classList.remove('hidden');
+                }
+            }, 1000);
+            toggleBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="4" width="4" height="16"/>
+                    <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+                Pause
+            `;
+            toggleBtn.className = 'pause-btn';
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(interval);
+                isRunning = false;
+                toggleBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    Resume
+                `;
+                toggleBtn.className = 'resume-btn';
+            } else {
+                if (timeInSeconds > 0) {
+                    isRunning = true;
+                    interval = setInterval(() => {
+                        timeInSeconds--;
+                        updateDisplay();
+                        
+                        if (timeInSeconds === 0) {
+                            clearInterval(interval);
+                            isRunning = false;
+                            playSound();
+                            toggleBtn.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                Resume
+                            `;
+                            toggleBtn.className = 'resume-btn';
+                            restartBtn.classList.remove('hidden');
+                        }
+                    }, 1000);
+                    toggleBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                        Pause
+                    `;
+                    toggleBtn.className = 'pause-btn';
+                }
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(interval);
+            isRunning = false;
+            timeInSeconds = 0;
+            initialTime = 0;
+            hoursInput.value = '0';
+            minutesInput.value = '0';
+            secondsInput.value = '0';
+            inputSection.classList.remove('hidden');
+            timerSection.classList.add('hidden');
+            restartBtn.classList.add('hidden');
+            toggleBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="4" width="4" height="16"/>
+                    <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+                Pause
+            `;
+            toggleBtn.className = 'pause-btn';
+        }
+
+        startBtn.addEventListener('click', startTimer);
+        toggleBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        restartBtn.addEventListener('click', restartTimer);
+
+        // Input validation
+        function validateInput(input) {
+            let value = parseInt(input.value) || 0;
+            const max = parseInt(input.max);
+            
+            if (input.hasAttribute('max')) {
+                value = Math.min(value, max);
+            }
+            
+            value = Math.max(value, 0);
+            input.value = value;
+        }
+
+        hoursInput.addEventListener('change', () => validateInput(hoursInput));
+        minutesInput.addEventListener('change', () => validateInput(minutesInput));
+        secondsInput.addEventListener('change', () => validateInput(secondsInput));
+    </script>
+</body>
+</html>
