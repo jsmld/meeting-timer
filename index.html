@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meeting Timer</title>
+    <title>Countdown Timer</title>
     <style>
         body {
             margin: 0;
@@ -123,6 +123,7 @@
 
         .restart-btn {
             background-color: #805ad5;
+            margin-top: 1rem;
         }
 
         .restart-btn:hover {
@@ -230,7 +231,7 @@
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
             </svg>
-            <h1 class="title">Meeting Timer</h1>
+            <h1 class="title">Countdown Timer</h1>
         </div>
 
         <div id="input-section">
@@ -258,9 +259,8 @@
                         <input type="radio" id="default-sound" name="sound-type" value="default" checked>
                         <label for="default-sound">Default Sounds</label>
                         <select id="sound-select" class="sound-select">
-                            <option value="bell">Bell</option>
-                            <option value="alert">Alert</option>
-                            <option value="chime">Chime</option>
+                            <option value="pianitoFuerte">Pianito Fuerte</option>
+                            <option value="pianitoSuave">Pianito Suave</option>
                         </select>
                     </div>
                     <div class="sound-type">
@@ -307,7 +307,7 @@
                     Reset
                 </button>
             </div>
-            <button id="restart-btn" class="restart-btn hidden" style="margin-top: 1rem;">
+            <button id="restart-btn" class="restart-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                     <path d="M3 3v5h5"/>
@@ -323,8 +323,14 @@
         let timeInSeconds = 0;
         let initialTime = 0;
         let isRunning = false;
-        let interval;
+        let interval = null;
         let customAudio = null;
+
+        // Load default sounds
+        const defaultSounds = {
+            pianitoFuerte: new Audio('sounds/pianitoFuerte.mp3'),
+            pianitoSuave: new Audio('sounds/pianitoSuave.mp3')
+        };
 
         const inputSection = document.getElementById('input-section');
         const timerSection = document.getElementById('timer-section');
@@ -344,53 +350,13 @@
         const fileNameDisplay = document.getElementById('file-name');
         const testSoundBtn = document.getElementById('test-sound');
 
-        // Audio context and sounds
-        let audioContext;
-        const sounds = {
-            bell: {
-                frequency: 440,
-                type: 'sine',
-                duration: 0.5
-            },
-            alert: {
-                frequency: 880,
-                type: 'square',
-                duration: 0.3
-            },
-            chime: {
-                frequency: 523.25,
-                type: 'triangle',
-                duration: 1
-            }
-        };
-
-        function playDefaultSound() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
-            const sound = sounds[soundSelect.value];
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.type = sound.type;
-            oscillator.frequency.setValueAtTime(sound.frequency, audioContext.currentTime);
-
-            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + sound.duration);
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + sound.duration);
-        }
-
         function playSound() {
             if (!soundEnabled.checked) return;
 
             if (defaultSoundRadio.checked) {
-                playDefaultSound();
+                const sound = defaultSounds[soundSelect.value];
+                sound.currentTime = 0;
+                sound.play();
             } else if (customAudio) {
                 customAudio.currentTime = 0;
                 customAudio.play();
@@ -431,56 +397,25 @@
         }
 
         function updateDisplay() {
-            timeDisplay.textContent = formatTime(timeInSeconds);
+            timeDisplay.textContent = formatTime(Math.max(0, timeInSeconds));
         }
 
-        function startTimer() {
-            const hours = parseInt(hoursInput.value) || 0;
-            const minutes = parseInt(minutesInput.value) || 0;
-            const seconds = parseInt(secondsInput.value) || 0;
-            
-            timeInSeconds = hours * 3600 + minutes * 60 + seconds;
-            initialTime = timeInSeconds; // Store initial time for restart
-            
-            if (timeInSeconds > 0) {
-                isRunning = true;
-                inputSection.classList.add('hidden');
-                timerSection.classList.remove('hidden');
-                restartBtn.classList.add('hidden');
-                updateDisplay();
-                interval = setInterval(() => {
-                    timeInSeconds--;
-                    updateDisplay();
-                    
-                    if (timeInSeconds === 0) {
-                        clearInterval(interval);
-                        isRunning = false;
-                        playSound();
-                        toggleBtn.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="5 3 19 12 5 21 5 3"/>
-                            </svg>
-                            Resume
-                        `;
-                        toggleBtn.className = 'resume-btn';
-                        restartBtn.classList.remove('hidden');
-                    }
-                }, 1000);
+        function stopTimer() {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
             }
+            isRunning = false;
         }
 
-        function restartTimer() {
-            timeInSeconds = initialTime;
+        function startCountdown() {
+            if (interval) {
+                clearInterval(interval);
+            }
             isRunning = true;
-            restartBtn.classList.add('hidden');
-            updateDisplay();
             interval = setInterval(() => {
-                timeInSeconds--;
-                updateDisplay();
-                
-                if (timeInSeconds === 0) {
-                    clearInterval(interval);
-                    isRunning = false;
+                if (timeInSeconds <= 0) {
+                    stopTimer();
                     playSound();
                     toggleBtn.innerHTML = `
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -489,9 +424,12 @@
                         Resume
                     `;
                     toggleBtn.className = 'resume-btn';
-                    restartBtn.classList.remove('hidden');
+                    return;
                 }
+                timeInSeconds--;
+                updateDisplay();
             }, 1000);
+
             toggleBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="6" y="4" width="4" height="16"/>
@@ -502,10 +440,32 @@
             toggleBtn.className = 'pause-btn';
         }
 
+        function startTimer() {
+            const hours = parseInt(hoursInput.value) || 0;
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            
+            timeInSeconds = hours * 3600 + minutes * 60 + seconds;
+            initialTime = timeInSeconds;
+            
+            if (timeInSeconds > 0) {
+                inputSection.classList.add('hidden');
+                timerSection.classList.remove('hidden');
+                updateDisplay();
+                startCountdown();
+            }
+        }
+
+        function restartTimer() {
+            stopTimer();
+            timeInSeconds = initialTime;
+            updateDisplay();
+            startCountdown();
+        }
+
         function toggleTimer() {
             if (isRunning) {
-                clearInterval(interval);
-                isRunning = false;
+                stopTimer();
                 toggleBtn.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="5 3 19 12 5 21 5 3"/>
@@ -513,42 +473,13 @@
                     Resume
                 `;
                 toggleBtn.className = 'resume-btn';
-            } else {
-                if (timeInSeconds > 0) {
-                    isRunning = true;
-                    interval = setInterval(() => {
-                        timeInSeconds--;
-                        updateDisplay();
-                        
-                        if (timeInSeconds === 0) {
-                            clearInterval(interval);
-                            isRunning = false;
-                            playSound();
-                            toggleBtn.innerHTML = `
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polygon points="5 3 19 12 5 21 5 3"/>
-                                </svg>
-                                Resume
-                            `;
-                            toggleBtn.className = 'resume-btn';
-                            restartBtn.classList.remove('hidden');
-                        }
-                    }, 1000);
-                    toggleBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="6" y="4" width="4" height="16"/>
-                            <rect x="14" y="4" width="4" height="16"/>
-                        </svg>
-                        Pause
-                    `;
-                    toggleBtn.className = 'pause-btn';
-                }
+            } else if (timeInSeconds > 0) {
+                startCountdown();
             }
         }
 
         function resetTimer() {
-            clearInterval(interval);
-            isRunning = false;
+            stopTimer();
             timeInSeconds = 0;
             initialTime = 0;
             hoursInput.value = '0';
@@ -556,7 +487,6 @@
             secondsInput.value = '0';
             inputSection.classList.remove('hidden');
             timerSection.classList.add('hidden');
-            restartBtn.classList.add('hidden');
             toggleBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="6" y="4" width="4" height="16"/>
@@ -565,6 +495,7 @@
                 Pause
             `;
             toggleBtn.className = 'pause-btn';
+            updateDisplay();
         }
 
         startBtn.addEventListener('click', startTimer);
